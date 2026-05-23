@@ -1,0 +1,125 @@
+Welcome to notebook six. Statistics for data scientists.
+
+Notebook five taught you to look at data. This notebook teaches you to make claims about what you see.
+
+A bar in a chart is taller than another bar. So what? Statistics tells you whether the difference is real, or whether it could plausibly be noise. Two columns trend together in a scatterplot. So what? Statistics tells you how strong that relationship is, and whether it would reproduce on new data.
+
+Four topics, the smallest useful set. First, descriptive statistics — summarizing a column in a few numbers. Second, probability distributions — the shapes data takes, and how to sample them. Third, hypothesis testing — the framework for deciding whether a difference is real. And fourth, correlation — measuring how two variables move together.
+
+We use scipy stats for the formal tests. The python data stack has a heavier duty stats library too, called stats models, but for the daily questions a data scientist asks, scipy stats is enough.
+
+Let's start with descriptive statistics. A column's distribution can be summarized by a handful of numbers.
+
+The mean is the arithmetic average. It is pulled by outliers.
+
+The median is the middle value when the data is sorted. It is robust to outliers.
+
+The standard deviation tells you how spread out the values are around the mean.
+
+The twenty fifth and seventy fifth percentiles, also called the first and third quartiles, define the middle half of the data. The difference between them is called the inter quartile range, or i q r. The i q r is the median's robust cousin — it measures spread without being thrown off by outliers.
+
+The minimum and maximum tell you the endpoints, but they often hide outliers.
+
+Skew measures asymmetry. Positive skew means a long right tail — income data is the textbook case. Negative skew means a long left tail.
+
+Kurtosis measures tailedness. High kurtosis means lots of extreme values relative to a normal distribution.
+
+The mental model. Mean and median tell you the center. Standard deviation and i q r tell you the spread. Skew and kurtosis tell you the shape.
+
+The notebook then builds a synthetic monthly income series of five hundred customers drawn from a log normal distribution. And prints all of these statistics in one block. You will see that mean is higher than median, because the right tail of income pulls the mean upward. And you will see a positive skew, confirming the right tail visually.
+
+Now mean versus median. For symmetric distributions, mean and median agree. For skewed distributions they do not, and the choice matters.
+
+Income is the classic case. Most customers earn modestly. A few earn an order of magnitude more. The mean is pulled toward those high earners. The median sits in the middle of the actual population.
+
+When you report a typical value, the median is almost always more honest for skewed data. Mean is appropriate for symmetric data, or when you need a quantity that is mathematically tractable for downstream calculations.
+
+The same logic applies to spread. Standard deviation assumes a symmetric distribution. The inter quartile range is the median's robust cousin.
+
+The notebook demonstrates this with a small set of customer balances around fifty thousand rupees. Then it adds one billionaire customer to the bank. The mean roughly hundred x's. The median barely moves. One number lies about the population; the other tells the truth.
+
+Now probability distributions. A distribution is a function that describes how likely each value is. Three distributions cover almost all financial data.
+
+The normal distribution, also called the gaussian distribution. A symmetric bell curve. Daily returns on a stable asset look normal. Measurement noise looks normal.
+
+The uniform distribution. Flat — every value in a range is equally likely. Used for random ay-dees and for a b test assignment.
+
+The log normal distribution. Right skewed. If you take the natural log of a log normal value, you get a normal value. This is what describes income, account balances, loan amounts, and transaction sizes at fintech bank.
+
+Numpy's default rng object has methods named dot normal, dot uniform, and dot log normal to sample from each. Scipy stats gives you the full distribution object — probability density function, cumulative distribution function, percent point function, fitting — when you need more than just sampling.
+
+The notebook samples two thousand points from each of the three distributions and draws all three histograms side by side in a one by three subplot grid. The normal is the symmetric bell. The uniform is the flat block. The log normal has a sharp peak near zero with a long right tail.
+
+Now why distributions matter. The log transform.
+
+Most machine learning and statistical methods assume the input is roughly normal. They behave badly on skewed inputs. Outliers dominate, regression coefficients explode, distance metrics get distorted.
+
+The cure for right skewed data is the log transform. If x is log normal, then log of x is normal by construction. This single transformation makes income, balances, and transaction amounts behave well in any downstream model.
+
+You will see this pattern over and over in notebook seven feature engineering. Identify the skewed columns, apply numpy dot log one plus, which is log of one plus x and handles zeros gracefully, then proceed.
+
+The notebook draws two histograms side by side. On the left, the original income distribution with positive skew around one point five. On the right, the log of income, with skew dropped close to zero — a near normal bell curve. Same data, different shape. The log transform is one of the highest leverage operations in your toolkit.
+
+Now hypothesis testing. The framework for deciding whether a difference is real or just noise. Five steps.
+
+First, state a null hypothesis, also called h naught. The boring claim. Usually "there is no difference."
+
+Second, state an alternative hypothesis, also called h one. The interesting claim. "There is a difference."
+
+Third, compute a test statistic from the data.
+
+Fourth, compute the p value. This is the probability of seeing data this extreme if h naught were true.
+
+Fifth, if p is less than alpha, conventionally zero point zero five, reject h naught.
+
+A p value answers exactly one question. If there really were no effect, how surprising would my data be? Small p means surprising means the no effect assumption probably does not hold.
+
+Two tests cover the bulk of daily work. T test independent for comparing two numeric groups. And chi square contingency for comparing categorical breakdowns.
+
+Now the two sample t test. The question is — do retail and wealth segment customers earn different mean incomes?
+
+H naught — the two segments have the same mean income. H one — the two segments have different mean incomes.
+
+The function scipy dot stats dot t test independent does the work. It returns a test statistic and a p value. If you suspect the two groups have different variances — which is almost always true for income data — pass equal variance equals false. That is welch's t test, the safe default.
+
+Always pair the p value with an effect size. Cohen's d is the standard. The difference in means divided by the pooled standard deviation. A d around zero point two is small. Around zero point five is medium. Around zero point eight or higher is large.
+
+The notebook samples three hundred retail customers with a lower income mean and eighty wealth customers with a higher income mean, then runs welch's t test. The result is a tiny p value, so we reject the null and conclude the segments are different. Then it computes cohen's d to quantify the size of the gap in standard deviations.
+
+Now the chi square test. The question is — is customer segment independent of city, or do some cities have a higher proportion of wealth segment customers than others?
+
+H naught — segment and city are independent. H one — they are not. The segment distribution differs across cities.
+
+The test takes a contingency table — a cross tab of counts of segment by city — and asks whether the observed counts deviate meaningfully from what you would expect under independence.
+
+The function pandas dot crosstab builds the table. The function scipy dot stats dot chi square contingency runs the test. It returns four values. The chi square statistic. The p value. The degrees of freedom. And the expected counts table under independence.
+
+The notebook constructs a sample of four hundred customers across five cities, with bengaluru and mumbai biased to have proportionally more wealth segment customers. The cross tab shows the imbalance. The chi square test returns a small p value, confirming that segment and city are not independent.
+
+Now correlation. Pearson versus spearman.
+
+Two columns move together. How tightly, and in what kind of relationship?
+
+Pearson correlation measures linear correlation. It is sensitive to outliers and to non linear shapes. Use it when both columns are continuous and roughly linearly related.
+
+Spearman correlation measures monotonic correlation. It is computed on ranks, so it is robust to non linearity and to outliers. Use it when you suspect a non linear but consistent trend, or when your data has heavy tails.
+
+Both measures return a coefficient between minus one and plus one, and a p value testing the null of no correlation. When in doubt, look at both. A large gap between them is a signal that the relationship is monotonic but not linear — and you should go look at the scatterplot before drawing any conclusion.
+
+The notebook generates two test cases. First, a linear relationship where y equals two x plus noise. Pearson and spearman both come back around zero point nine. They agree. Second, a logarithmic relationship where y equals log of x times ten plus noise. Pearson drops because the relationship is curved, but spearman stays near one because rank order is preserved under any monotonic transformation. The gap between the two coefficients is the diagnostic.
+
+Now a critical note. P values aren't enough. Two traps ruin most statistically significant claims you see in business decks.
+
+The first trap. Effect size matters more than significance. With a large enough sample, any difference becomes statistically significant. A p value of one e minus nine with a cohen's d of zero point zero five means yes there is a difference, but it is so small that no one cares. Always report or check the effect size alongside the p value.
+
+The second trap. Multiple testing inflates false positives. If you run twenty t tests at alpha equals zero point zero five, you expect roughly one false positive even when nothing is real. Either correct for it using stats models dot multitest dot multiple tests with method bonferroni or method f d r b h. Or pre register the single test you actually care about before looking at the data.
+
+These two failures are where most we have a significant result claims fall apart under scrutiny.
+
+Finally, what's next. You can now describe a column, identify its distribution, test whether two groups differ, and measure how two columns relate. That is the formal language for everything notebook five's plots were showing you visually.
+
+Notebook seven brings the full track together in an end to end exploratory data analysis and feature engineering pass on fintech bank data. Descriptive statistics. Distribution checks. Missing data audits. Correlation pruning. Log transforms. And the categorical encodings that hand a clean data frame off to the machine learning repo.
+
+Two short from memory exercises. First, build a card transactions series of five hundred amounts using log normal. Compute its skew, then apply numpy dot log and recompute. By how much did the skew drop? Second, build two samples of card transactions — one labeled groceries, one labeled electronics — drawn from log normals with different means. Run welch's t test and compute cohen's d. Is the difference statistically significant? Is it practically significant?
+
+Closing the notebook and writing these calculations from memory is what locks in the model.
