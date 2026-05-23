@@ -1,0 +1,95 @@
+Welcome to notebook two. Numpy, the numeric core.
+
+In notebook one we promised that every column of every pandas data frame is, underneath, a numpy array. This notebook makes that claim concrete.
+
+Numpy gives you one data structure — the n d array — and a small set of rules for working with it. Master four things and the rest of the python data stack snaps into focus. First, what an n d array actually is — data type plus shape plus a contiguous block of memory. Second, data types — the typed array contract. Third, vectorization — why you almost never write a for loop. And fourth, broadcasting — how arrays of different shapes still combine cleanly. That is the entire notebook.
+
+Let's start with the n d array itself. An n d array is three things bundled together.
+
+First, a single contiguous block of memory holding raw values. No Python objects, no boxing. Just bytes.
+
+Second, a data type. Every value in that block is the same fixed width type. All sixty four bit floats, or all sixty four bit integers, or all booleans. Not mixed.
+
+Third, a shape. A tuple like length five, or three by four, that says how to interpret the block as rows and columns.
+
+If you come from a java virtual machine background, this is the difference between an array list of object and a double array. Python's built in list is the former. Every element is a boxed object, the list stores pointers, and arithmetic has to chase pointers and unbox each value. Numpy's n d array is the latter. One flat block of doubles, or integers, or booleans, and arithmetic happens in native code, one whole array at a time.
+
+The shape tuple is what lets the same memory block be read as one dimensional, two dimensional, or higher dimensional. A twelve element block can be a length twelve vector, a three by four matrix, or a two by two by three cube. Same bytes, different shape.
+
+The notebook then creates its first array from a Python list of five values, and prints its shape, its data type, the number of dimensions, and the item size in bytes. Run that cell and you will see numpy report a shape of length five, a data type of integer sixty four, one dimension, and eight bytes per element.
+
+Now let's talk about creating arrays. You will only ever use a handful of constructors. Memorize six of them.
+
+The first is numpy dot array, which takes a Python list, or a nested list, and converts it to an n d array.
+
+The second is numpy dot zeros, which gives you an array of all zeros of a given shape.
+
+The third is numpy dot ones, which gives you an array of all ones of a given shape.
+
+The fourth is numpy dot full, which gives you an array of all copies of any value you pick, of a given shape.
+
+The fifth is numpy dot arrange, which gives you evenly spaced integers between a start and a stop value with a step. It works just like Python's range function but returns an array.
+
+The sixth is numpy dot linspace, which gives you a fixed number of evenly spaced floating point values between a start and a stop, and crucially, it includes both endpoints. Use arrange when you want integer indices. Use linspace when you want to plot something — give it the endpoints and the count, and you will never get a fencepost error.
+
+Next, data types. Every n d array has a single data type. This is what lets numpy stay fast. The engine knows it can do a hardware level add on sixty four bit floats without checking the type of each cell.
+
+The common data types you will meet are integer sixty four, the default for whole numbers on most systems; float sixty four, the default for any array that contains a decimal; boolean, for true or false; and object, which is the escape hatch for Python objects but should be avoided in numeric code because it kills performance.
+
+If you assign a Python list with mixed types, numpy picks the widest data type that fits everything. So a list with two integers and one floating point value becomes a float sixty four array. To control the type explicitly, use the dot astype method.
+
+One important gotcha. Integer data types overflow silently. An integer eight only holds values from minus one hundred twenty eight to one hundred twenty seven. Add one hundred to one hundred in integer eight and you get minus fifty six, with no warning. Stick with integer sixty four unless you genuinely need to save memory.
+
+Now shape and reshape. A twelve element array can be read as a single one dimensional vector, or a three by four matrix, or a four by three matrix, or a two by six matrix, or a two by two by three cube. All the same underlying bytes, just a different view.
+
+The reshape method does not move data. It changes how the array's strides interpret the block. That is why reshape is essentially free — it is a metadata change, not a copy.
+
+Numpy stores arrays in see order, also called row major order, by default. Rows live contiguously in memory, and the last axis varies fastest as you walk through the block. This matches the java virtual machine convention for flattening a two dimensional double array, and the sequel convention for laying out tabular data. So the mental model carries over.
+
+One useful trick. When reshaping, you can pass minus one for one of the dimensions, and numpy will infer it from the other. Reshape minus one comma six means "six columns, figure out how many rows that needs."
+
+And now we reach the headline. Vectorization. This is the single biggest reason numpy exists.
+
+The Python way. To multiply every element of a list by two, you write a for loop. Each iteration goes through the interpreter. Fetch the object, unbox the integer, multiply, box the result, store the pointer. Repeat one million times. Slow.
+
+The numpy way. The expression array times two on an n d array calls a single compiled see-language loop that runs at memory bandwidth speed. The interpreter is hit once per operation, not once per element.
+
+The rule for writing fast numpy code is short. If you wrote a for loop over array elements, you wrote the wrong code. Find the vectorized operation. The notebook demonstrates this by timing a Python list comprehension versus a numpy multiplication on a million elements. You will typically see numpy come in fifty to a hundred times faster, depending on your machine.
+
+Now broadcasting. Vectorization handles arrays of the same shape. Broadcasting is the trick that makes arrays of different shapes work together, without copying the data.
+
+The rule, in one sentence. Numpy compares shapes from the right. Two dimensions are compatible if they are equal, or if one of them is one. The dimension of size one is conceptually stretched to match.
+
+Three patterns cover ninety five percent of broadcasting.
+
+First, a scalar plus an array. The scalar is treated as if it were the same shape as the array. So adding one hundred to a three by four matrix adds one hundred to every cell.
+
+Second, a row vector plus a matrix. A vector of length four lines up with the last axis of a three by four matrix, and gets added to every row of that matrix.
+
+Third, a column vector plus a matrix. A column of shape three by one lines up with the first axis of a three by four matrix, and gets added to every column of that matrix.
+
+The key insight here is that the data is not actually duplicated in memory. Numpy fakes the stretch via strides. So broadcasting costs almost nothing in time or memory. That is what makes it powerful — you can express what would be a nested loop in Java as a single arithmetic operation.
+
+Next, aggregations along axes. The sum, mean, standard deviation, minimum, and maximum methods all take an axis argument that controls how the reduction sweeps the array.
+
+Axis zero means collapse rows, keep columns. Sum down each column.
+
+Axis one means collapse columns, keep rows. Sum across each row.
+
+If you pass no axis at all, the whole array collapses to a single scalar.
+
+The mnemonic to remember is this. The axis you name is the axis that goes away. If you call sum with axis zero on a three by four matrix, the result has shape length four — the row axis disappeared.
+
+Now the fintech tie in. Picture five customers, each holding four products at fintech bank. Home loan, car loan, personal loan, and gold loan. We have a five by four matrix of outstanding balances — one row per customer, one column per product. And we have a length four vector of annual interest rates — one rate per product.
+
+We want the annual interest each customer owes per product. That is a single broadcast multiplication. No loops, no joins, no copies. The five by four matrix lines up with the length four rate vector on the last axis, and numpy applies the right rate to the right column for every row. One line of code replaces what would be a twenty iteration nested loop in Java.
+
+We can then aggregate. Summing along axis one gives the total annual interest each customer owes across all products. Summing along axis zero gives the total annual interest the bank earns from all customers in each product. Two aggregations, two lines.
+
+Finally, what's next. Numpy gives you fast typed arrays. What it does not give you is labels. You cannot ask for the row for customer one zero four two. You only have integer positions. It also does not let you mix types in one table. A numpy array is one data type only, so you cannot have name, age, and city in one structure cleanly. And it does not give you a proper missing data story. There is no first class missing marker that works across all data types.
+
+That is what pandas adds. Notebook three introduces series and data frame — numpy with labels, mixed types, and a proper missing data story. And it shows how to read real comma separated value, jason, parquet, and sequel sources into them.
+
+Two short from memory exercises before you move on. First, build a four by three matrix of card transaction amounts and a length three vector of category discount rates. Use broadcasting to get the discount each transaction qualifies for. Second, from the same matrix, compute the average transaction per category along axis zero, and per customer along axis one.
+
+Closing the notebook and writing these from memory is what locks in the model.
