@@ -1,0 +1,69 @@
+Welcome to notebook three. Pandas — structures and loading.
+
+Notebook two left you with fast typed arrays, and a list of what numpy was missing. Labels. Mixed types in one table. And a first class missing data story. Pandas adds all three on top of numpy.
+
+This notebook covers four things. First, the series — a labeled one dimensional array. Think of it as one column of a table. Second, the data frame — a labeled two dimensional table built from series columns. Third, dot loc versus dot eye loc — label based versus position based selection. This is the single most confusing pandas concept, so we will spend real time on it. And fourth, reading data — comma separated value files, jason files, parquet files, and sequel sources. Getting real data into a data frame. We finish this notebook ready to clean and transform data in notebook four.
+
+Let's start with the series. A series is a numpy array bolted to an index. The values are still a typed numpy block underneath. If you call dot values on a series you get back the raw n d array we worked with in notebook two. The new thing is that every value has a label. A customer ay-dee, a date, a city name, anything you choose.
+
+For a java virtual machine reader, a series is closer to a linked hash map of key to value than to a list of value. The order is preserved, lookup by key is cheap, and iteration is in insertion order. The big difference from a Java map is that the values are stored in a contiguous typed block — the numpy array underneath — so arithmetic across the whole series still runs at numpy speed.
+
+If you do not supply an index, pandas gives you the integer positions zero, one, two, and so on. Which makes a series look just like a numpy array. The index is always there; it just may be the trivial one.
+
+The notebook then constructs a series of monthly incomes for five customers, with customer ay-dees as the index. We print out the underlying values, the index, the data type, and the name. You will see that the values are still a numpy array, the data type is integer sixty four, but now each value is labeled by its customer ay-dee.
+
+Now we hit the most important concept in pandas. Loc versus eye loc.
+
+There are two ways to grab a value out of a series. Dot loc with square brackets uses the index label. So loc one zero zero three asks for the row labeled one zero zero three. That is the income of customer one thousand and three.
+
+Dot eye loc, also with square brackets, uses the integer position. Eye loc two asks for the row at position two, which is the third row counting from zero, regardless of what label that row carries.
+
+If your index is itself made of integers, the two operations look similar but are not the same. If you ask for loc one zero zero three on a series indexed by customer ay-dees, you get the income of customer one thousand and three. If you ask for eye loc one zero zero three on a series that only has five rows, you get a crash because position one thousand and three does not exist.
+
+The mental model that nails this. Dot loc is like calling map dot get with a key. Dot eye loc is like calling list dot get with a position. Use the one that matches what you mean.
+
+One slice gotcha worth remembering. Dot loc slices are inclusive on the right. Dot eye loc slices are exclusive on the right, just like Python lists. So loc from one zero zero two to one zero zero four returns three rows. But eye loc from one to four returns three rows as well — positions one, two, and three. The endpoints behave differently. Keep this in mind or it will bite you.
+
+Now data frames. A data frame is a collection of series sharing the same index. Each column is one series, and they all line up row by row. Each column has its own data type — that is how pandas fits mixed types in one structure. A name column of strings, an age column of integers, and an income column of floats, all in one table. Numpy could not do that. Pandas can.
+
+The attributes to know on day one are these. Dot shape gives you a tuple of rows and columns. Dot columns gives you the column names. Dot index gives you the row labels. Dot dtypes gives you the data type of each column. Dot head and dot tail give you the first or last five rows. Dot info gives you per column type and null counts. Dot describe gives you a numeric summary per column. Run these the moment a data frame lands in your session.
+
+The notebook builds a small customers data frame with five rows. Realistic Indian names, ages, cities, and monthly incomes, indexed by customer ay-dee. Then it prints the shape, the column names, and the data types. You will see name and city show up as object, which is pandas speak for string. Age and income show up as integer sixty four.
+
+Now selecting columns. Two patterns cover everything. Customers in square brackets with the column name as a string returns a single column as a series. Customers in square brackets, with another set of square brackets inside containing a list of column names, returns a data frame with just those columns. Note the double brackets — the outer pair is the indexer, the inner pair is the Python list of names. Forget the inner brackets and pandas thinks you handed it a tuple, which it does not know how to interpret. This trips up everyone once.
+
+Now selecting rows. Three ways. Each has its place.
+
+The first is dot loc with the row label. The second is dot eye loc with the integer position. The third is a boolean mask — passing a series of true and false values to the data frame, and pandas keeps only the rows where the mask is true.
+
+You can also combine row and column selection in one shot. Dot loc with rows comma columns. Dot eye loc with positions comma column positions. This is usually clearer than chained square bracket access, and it avoids a class of warnings that pandas raises when you start assigning to slices.
+
+The notebook demonstrates these. Loc with a single label returns the row as a series. Eye loc with a single position returns the row as a series. Loc with a row slice and a column list returns a smaller data frame. You will see all three in any real pandas codebase.
+
+Boolean filtering is the third pattern and it deserves its own demonstration. You start by writing a comparison on a column. Customers dot age greater than forty. That gives you a series of true and false, one per row. You then pass that mask back into the data frame using square brackets, and pandas keeps only the rows where the mask is true.
+
+To combine conditions, use the ampersand for and, and the pipe symbol for or. Each condition needs its own parentheses, because the comparison operators bind tighter than the bitwise operators in Python. So you write open paren age greater than forty close paren ampersand open paren city equals Bengaluru close paren. Forget the parentheses and you get a confusing error. Memorize the pattern.
+
+Now we get to the second half of the notebook. Reading data.
+
+The four formats you will meet most often are comma separated value, jason, parquet, and sequel. Each has a pandas read function and a corresponding to function on the data frame.
+
+Comma separated value files use pandas dot read csv and data frame dot to csv. The format is text, human readable, and universal. The downside is that all type information is lost on write. Every column becomes a string when written, and pandas has to guess the types when it reads back. You will often need to fix data types after a comma separated value round trip.
+
+Jason files use pandas dot read jason and data frame dot to jason. Good for nested data, rest api responses, and configuration files. Slower than comma separated value at scale.
+
+Parquet files use pandas dot read parquet and data frame dot to parquet. Parquet is a columnar binary format. It preserves data types exactly, compresses well, and is fast to read. This is the data engineer's default — both the apache spark repo and the databricks repo write parquet by default. The downside is that parquet requires either py arrow or fast parquet to be installed.
+
+Sequel sources use pandas dot read sequel and data frame dot to sequel. These take a connection object — anything that follows the Python database api. So sequel light from the standard library, postgres via psycopg two, my sequel via py my sequel, or a sequel alchemy engine for any of them. And they take a query string or a table name.
+
+The notebook then does a round trip demonstration. It writes the customers data frame to a comma separated value file in a temp directory, reads it back, and prints the data types. You will see the data types come back close to the original but with object columns where strings used to be.
+
+The same pattern repeats for jason — using orient equals table, which is the option that preserves both data types and the index. Then again for parquet — which preserves data types natively without any special options. After running both, you can see parquet is the only format that comes back with the exact same types you started with. This is why data engineers reach for parquet first.
+
+Then a quick demo of reading from sequel. We use sequel light with an in memory database — passing colon memory colon as the connection string means no file is written to disk. Two lines do the work. Data frame dot to sequel pushes the data frame into a table. And pandas dot read sequel pulls the result of a query back as a data frame. The pattern is identical against a real data warehouse — you just swap the connection object.
+
+Finally, what's next. You can now build a data frame, pull rows and columns out of it three different ways, and read from the four formats that cover almost every real world data source. What you cannot yet do well is clean and reshape data once it lands. Real data has missing values, duplicate rows, inconsistent types, and the wrong shape. Notebook four covers drop n a and fill n a for missing values, group by for aggregation, merge for joins, pivot and melt for reshape, and time series operations. The muscle that gets messy data into a model ready shape.
+
+Two short from memory exercises. First, build a loan accounts data frame with six rows and the columns loan ay-dee, customer ay-dee, product, principal, equated monthly installment, and tenure months. Index it by loan ay-dee. Write it to a parquet file and read it back, and confirm the data types survived the round trip. Second, from that same data frame, use a boolean mask combined with dot loc to select only the home loans where product equals home loan, and return just the principal and equated monthly installment columns.
+
+Closing the notebook and writing these from memory is what locks in the model.
