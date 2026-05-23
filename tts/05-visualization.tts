@@ -1,0 +1,81 @@
+Welcome to notebook five. Visualization with matplotlib and seaborn.
+
+Notebook four left you with clean, reshaped data frames. Plots are how you actually look at them. This notebook covers two libraries side by side.
+
+The first is matplotlib. The low level plotting engine. It gives you full control over the figure, the axes, the ticks, and the colors. The mental model — figure and axes — carries over to every plot you will ever draw in Python.
+
+The second is seaborn. It sits on top of matplotlib and gives you statistical plots in one line. Distributions, relationships, categorical aggregates, correlation matrices.
+
+You will end up using both. Matplotlib for the structure of the figure. Seaborn for the actual plot inside each axes.
+
+Let's start with the relationship between the two. Matplotlib is the canvas. Seaborn is the paint.
+
+Every seaborn function calls matplotlib under the hood. When you write seaborn dot histplot with a data frame and a column name, seaborn creates or accepts a matplotlib axes object, draws onto it, and returns it. Three useful things hold at the same time. You can customize any seaborn plot using matplotlib methods on the returned axes. You can put multiple seaborn plots in one figure by passing each one its own axes argument. And you never have to choose one library over the other. You use both at once.
+
+Now the single most important concept in matplotlib. The figure and axes model.
+
+A figure is the whole image. The rectangle the file gets saved as. The pixels on the screen.
+
+An axes is one plot inside that figure. Its own coordinate system, its own ticks, its own title, its own legend.
+
+A figure can hold one axes — that is the case for most plots. Or it can hold a grid of many axes — that is a dashboard.
+
+You always create them with the line: fig comma ax equals p l t dot subplots. And then you draw onto ax. That is the object oriented interface, and it is what you should use.
+
+The alternative is the pyplot global interface — calling p l t dot plot directly, without an axes — which writes onto the "current" axes implicitly. That is the same kind of mistake as relying on system dot out everywhere in Java instead of passing a writer object. Convenient at the read evaluate print loop, but fragile in any real script. Always use the explicit form. Make the figure, make the axes, draw onto the axes.
+
+The first code cell demonstrates this. It imports numpy, pandas, matplotlib's pyplot module under the alias p l t, and seaborn under the alias s n s. It sets the seaborn theme to a white grid style for readability. Then it creates a figure with one axes and draws a sine curve on it.
+
+Now the anatomy of an axes. Every plot has the same structural pieces, and all of them are set via methods on the axes object.
+
+The set title method sets the plot title. The set x label and set y label methods set the axis labels. The set x limit and set y limit methods constrain the axis ranges. The legend method shows the legend. The grid method toggles gridlines. The set x ticks method controls tick positions.
+
+The convention is to draw your data first, then set everything else. To put multiple series on the same axes, call dot plot on the same axes twice. Both lines share the same axes, matplotlib gives them different colors automatically, and the legend includes them both when you label them.
+
+The notebook demonstrates this by plotting sine of x and cosine of x on the same axes, with labels, a title, axis labels, and a legend.
+
+Now subplots. The function p l t dot subplots with row count and column count returns a figure and a two dimensional array of axes. Each axes is independent — its own data, its own title, its own ticks. You index into the array just like any numpy array.
+
+The pattern for a dashboard is short. Create the grid. Draw onto each cell. Finish with fig dot tight layout. Tight layout is the one liner that prevents subplot titles and axis labels from overlapping each other. Run it on every multi axes figure.
+
+The notebook then builds a two by two grid showing four different plot types side by side. A line plot in the top left. A scatter plot in the top right. A histogram in the bottom left. And a bar chart in the bottom right. The point is not the data — the point is that one figure holds four independent axes, and matplotlib handles the layout for you.
+
+Now we move to seaborn. Seaborn is statistical plots that take a data frame.
+
+The seaborn application programming interface is consistent across plot types. Every function accepts a long form data frame plus column names as strings. Histplot with data equals the data frame and x equals a column name draws a distribution of that one numeric column. Boxplot with x equals a category and y equals a numeric column draws a box for each category. Scatterplot with x and y both numeric draws a scatter. Barplot with x equals a category and y equals a numeric column computes the mean per category and draws a bar.
+
+The hue argument is the single most important option to learn in seaborn. It splits the plot by a categorical column and color codes each group. One line, color coded comparison. So instead of writing five different scatterplots for five segments, you write one scatterplot with hue equals segment, and seaborn handles the rest.
+
+You can also pass an axes argument to drop a seaborn plot into a specific matplotlib axes. That is how you build dashboards with seaborn parts inside a matplotlib subplot grid.
+
+The notebook builds a sample customers data frame of one hundred customers, with realistic ages, cities, segments, and monthly incomes drawn from a log normal distribution. Then it shows two distribution plots in a row. First, a histogram of monthly income, showing the right skew that income data typically has. Second, a boxplot of monthly income grouped by city, so you can compare the spread of incomes across the five cities at a glance.
+
+Now relationship plots. When both axes are numeric, you want a scatterplot. Seaborn dot scatterplot is the workhorse. Adding hue equals a categorical column colors the points by that column. Adding size equals a numeric column scales the marker by that column. So in one plot you can show four dimensions — x position, y position, color, and size.
+
+For a quick linear regression overlay on top of a scatter, use seaborn dot reg plot. It draws the scatter plus a fitted line with a confidence band around the line. Useful for answering "is there a relationship here?" at a glance, before any formal correlation testing in notebook six.
+
+The notebook demonstrates this by drawing age on the x axis against monthly income on the y axis, with the points colored by customer segment — retail versus wealth. You will typically see the wealth segment points cluster at higher incomes regardless of age.
+
+Now categorical aggregates. Seaborn dot barplot takes long form data and aggregates for you. By default it shows the mean of y for each x group, with a confidence interval bar drawn on top.
+
+This is different from matplotlib's ax dot bar, which expects you to have already aggregated the data. Seaborn dot barplot does the group by internally. Add hue equals a second category to split bars by that category — you get side by side bars per group, color coded by the second variable.
+
+For categorical counts, not aggregates, use seaborn dot count plot. Same idea but it counts the rows per category rather than averaging a numeric column.
+
+The notebook shows a barplot of average monthly income by city, with bars split side by side by segment. Setting the error bar argument to none removes the confidence interval whiskers, which makes the bars cleaner to read when you only care about the means.
+
+Now correlation heatmap. When you have several numeric columns and want to see all pairwise relationships at once, the move is to call dot corr on the data frame, which returns a correlation matrix, and then pass that matrix to seaborn dot heatmap.
+
+Two conventions worth following. Pass annotate equals true so each cell prints its correlation value, which is readable at a glance. And use a diverging color map — coolwarm, or r d b u reversed — centered at zero, so positive and negative correlations are visually distinct.
+
+A correlation of plus one means the two columns move together exactly. Minus one means they move in opposite directions exactly. Zero means there is no linear relationship between them. The heatmap is the fastest way to spot redundant features before modeling — anything above zero point nine in absolute value is usually a duplicate signal, and you would drop one of the two columns before training a model.
+
+The notebook adds two more numeric columns to the customers data frame — an account balance proportional to income with some random multiplier, and a synthetic credit score that depends on income with some noise. Then it computes the four column correlation matrix and draws it as an annotated heatmap.
+
+Finally, what's next. You can now build any plot an exploratory data analysis session needs. The figure and axes model gives you the structure. Seaborn gives you the statistical plot types — distribution, relationship, categorical, and correlation.
+
+Notebook six introduces statistics for data scientists. Descriptive statistics you have already touched on, plus probability distributions, hypothesis testing, and correlation as a formal measure. The heatmap in this notebook shows you the numbers. Notebook six tells you when those numbers are statistically meaningful, and when they are just noise.
+
+Two short from memory exercises. First, build a small card transactions data frame with an amount column and a category column. In a single figure with two axes side by side, plot a histogram of the amount on the left, and a boxplot of the amount grouped by category on the right. Second, from the customers data frame in this notebook, produce a scatterplot of monthly income on the x axis against credit score on the y axis, with the points colored by city. Look at the chart and ask yourself — does any city stand out from the rest?
+
+Closing the notebook and writing these plots from memory is what locks in the model.
