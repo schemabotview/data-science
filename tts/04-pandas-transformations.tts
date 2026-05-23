@@ -1,0 +1,85 @@
+Welcome to notebook four. Pandas transformations.
+
+Notebook three got you to a clean data frame. Real data is rarely clean on arrival. This notebook covers the five transformations that turn raw, messy data into model ready shape.
+
+First, missing data — finding it, dropping it, filling it. Second, group by — split, apply, and combine. The most important idiom in pandas. Third, merge — joining two data frames on a key. Fourth, reshape — pivot, which goes from long to wide, and melt, which goes from wide to long. And fifth, time series — parsing dates, indexing by date, and resampling. Master these five and most of the data cleaning you will ever do becomes mechanical.
+
+Let's start with missing data. Real data has gaps. Three operations cover almost everything.
+
+The first is dot is n a. It returns a boolean data frame of the same shape, with true wherever a value is missing.
+
+The second is dot drop n a. It drops rows, or optionally columns, that contain any or all missing values.
+
+The third is dot fill n a. It fills missing values with a constant, with a per column dictionary of defaults, or with a method like forward fill.
+
+Pandas represents missing as not a number for floating point columns, and as the pandas n a marker for the newer nullable data types. The line you should run immediately after loading any data frame is dot is n a, then dot sum. That gives you a count of nulls per column. That single result tells you which columns need attention before anything else.
+
+The notebook then builds a small customers data frame with deliberate gaps. Some names are missing, some ages are missing, some cities are missing, and some monthly incomes are missing. It shows three things in turn. The count of nulls per column. The result of drop n a — which leaves only rows with no missing values. And the result of a per column fill — using the string "unknown" for name and city, and the median for age and income. A median fill for numeric columns is almost always safer than mean fill, because the median is not pulled by outliers.
+
+Now group by. Anything you would write in sequel as group by, you write in pandas as dot group by. The three steps are always the same. Split, apply, combine.
+
+First, split the data frame into groups on one or more columns. Group by city, group by city and segment, group by month.
+
+Second, apply a function to each group. Usually an aggregation. Mean, sum, count, max, min, standard deviation.
+
+Third, combine the per group results back into a single data frame or series.
+
+Pandas does all three in one chained call. Data frame dot group by city, then square bracket monthly income, then dot mean. Read it left to right. Group by city, pick the income column, take the mean per group. Three steps, one line.
+
+The notebook demonstrates a basic single column group by — average monthly income per city, sorted from highest to lowest.
+
+Then it shows the multi column, multi aggregation form. You can group by two keys at once, and you can compute several aggregations in one call using dot agg. The cleanest form uses named aggregations — you write a new column name equals a tuple of source column and aggregation function. For example, customers equals customer ay-dee comma count gives a customer count per group. Average income equals monthly income comma mean gives the mean income per group. The result is a multi index data frame keyed by both grouping columns, with cleanly named output columns. This is the form you should learn first because it scales to any number of aggregations.
+
+Now merge. Merge is the pandas equivalent of a sequel join. The how argument controls which side you keep.
+
+How equals inner — the default. Only rows where the key matches in both tables.
+
+How equals left — every row from the left table, with not a number values in the right side columns where the right table has no match.
+
+How equals right — every row from the right table, with not a number values in the left side columns where the left table has no match.
+
+How equals outer — every row from both tables, with not a number wherever either side has no match.
+
+You specify the join column with on equals the key name. If the two tables call the same logical key by different names — customer ay-dee on one side, user ay-dee on the other — use left on and right on.
+
+The notebook builds a customers table and a loans table where one of the loans points to a customer that does not exist. The inner merge drops that loan and any customer with no loan. The left merge keeps every customer, and shows not a number in the loan columns for customers with no loans. A useful one liner to remember — call dot is n a on a column from the right side after a left merge, then dot sum, and you get a count of unmatched rows. That tells you how many customers have no loans.
+
+Now reshape. The same data can live in two shapes.
+
+Long form has one row per observation. Columns are usually ay-dee, attribute, and value. Long form is great for storage, for event logs, and for time series. Most data warehouses store data this way.
+
+Wide form has one row per entity, with many attribute columns. Wide form is great for spreadsheets, for correlation matrices, and for most plotting libraries that want each column to be a separate series.
+
+Two functions move between them.
+
+Dot pivot, with arguments index, columns, and values, goes from long to wide. Each unique value of the columns argument becomes a new output column.
+
+Pandas dot melt, with arguments ay-dee variables and value variables, goes from wide to long. Many columns collapse into one variable column and one value column.
+
+You will reshape data more than you expect. Time series aggregates land long. Seaborn heat maps and correlation matrices want wide. Categorical plots often want long again. Knowing how to move between the two shapes fluently is half the job.
+
+The notebook demonstrates pivot on a long form table of customer loans — one row per customer product pair, with a principal column. After pivot, you get one row per customer and one column per product, with the principal as the value. Customers who do not have a particular product show not a number in that column.
+
+Then it goes the other direction. Starting from the wide table, reset the index to bring customer ay-dee back as a regular column, then call melt with ay-dee variables equals customer ay-dee and value variables equals the product names. The result is back to long form, ready to drop the not a number rows for customers who do not have a product.
+
+Now time series. Two ingredients turn ordinary columns into a time series.
+
+First, convert the date column to a real datetime sixty four data type using pandas dot to datetime. This single line is one of the most important you will write in any data science session. Strings are not dates. A string of "twenty twenty six dash zero two dash zero five" sorts wrong, slices wrong, and cannot be resampled.
+
+Second, set that column as the data frame's index using dot set index. Once the index is datetime, slicing by date range just works. Data frame dot loc with the string "twenty twenty six dash zero two" returns every row in February of twenty twenty six. Data frame dot loc with a slice from one date to another returns every row in between. Calendar aware slicing comes for free.
+
+And once the index is datetime, you unlock dot resample. Resample is group by for time, with calendar aware buckets instead of arbitrary keys.
+
+The notebook builds a small loan repayments table with eight rows across three months. Parses the dates. Sets the date column as the index. And shows two things. First, slicing by month. Asking for everything in February twenty twenty six and getting back only the February rows. Second, the data types — confirming the date column is now datetime sixty four, not object.
+
+Then resample. Resample is group by for time. You bucket rows into calendar windows. The letter d for day. The letter w for week. The letters m e for month end. The letters q e for quarter end. Then you aggregate just like a normal group by.
+
+The notebook shows two resample patterns. The first is simple — resample with month end, then sum, to get monthly totals across all loans. The second is more advanced — group by loan ay-dee first, then resample within each group, then sum, then unstack to pivot the loan ay-dee level into columns. The result is a wide table where each column is a loan and each row is a month, with the total repayment in each cell. This combined group by and resample pattern is what you will use whenever you need per entity time series aggregation.
+
+Finally, what's next. You now have the five transformations that cover the bulk of real world data cleaning. Missing data handling, group by, merge, pivot and melt, and time series resampling.
+
+Notebook five introduces visualization. The matplotlib figure and axes model, and seaborn's statistical plots. The cleaned, reshaped data frames you build here are exactly what gets fed into plots in the next notebook.
+
+Two short from memory exercises. First, build a card transactions data frame with customer ay-dee, category, amount, and timestamp. Insert a few missing values in the category column. Fill them with the string "unknown", then group by category and compute the total spend per category. Second, parse the timestamp column to datetime, set it as the index, and resample those transactions by week to get a weekly total spend series.
+
+Closing the notebook and writing these from memory is what locks in the model.
