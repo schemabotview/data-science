@@ -1,0 +1,49 @@
+Welcome to the first notebook in the data science track. Before we touch any code, this notebook lays out a map of the territory. We will answer four questions. What is data science, really, and how is it different from analytics or machine learning. What does the day to day workflow actually look like. Where does this repo sit in that workflow. And what does a tiny end to end pass feel like in practice.
+
+Let's start with the three terms that get used interchangeably but are not the same job. Analytics, data science, and machine learning. Analytics asks, what happened. The output is dashboards, reports, and descriptive summaries. Data science asks a broader question. What is going on in this data, and what can we do with it. The output is cleaned datasets, features, hypotheses, and models. The full loop. Machine learning sits inside that loop. Given clean features, what predicts the target. The output is trained models and predictions.
+
+The headline you should take away here is that most of a real machine learning project is not the model. Loading, cleaning, joining, exploring, sanity checking — that is data science. The model itself is the last slice of the work, and it lives in the machine learning repo, not this one.
+
+Now the workflow. Textbooks draw the workflow as a straight pipeline going from left to right. Acquire, then clean, then explore, then model, then communicate. That picture is useful for getting started, but it is misleading. In practice the workflow is a loop. Picture five boxes in a row, but with arrows that can also point backwards. You start exploring, find that a column is unusable, and go back to cleaning. You train a model, the residuals look weird, and you go back to exploring. The loop is the work. The key insight here is that the steps are not done once and forgotten. You revisit them constantly as the data reveals what it really looks like.
+
+Next, where does this repo sit in that picture. This repo covers the pre machine learning layer. Acquire, clean, explore, the statistics underneath, and the feature engineering that bridges to modeling. The modeling step itself, the algorithms and the training loop, that lives in the machine learning repo. When you need to scale to terabytes, that lives in the apache spark repo and the databricks data engineer repo. The Python language itself, if you need to brush up, lives in the python repo. The seven notebooks here are a slow, careful tour of the pre machine learning layer before scale and modeling enter the picture.
+
+Now let's talk about the tools. Five libraries do almost all the work in data science with Python. Every notebook in this repo imports some subset of these.
+
+The first is numpy, usually imported under the alias n p. Numpy gives you n dimensional numeric arrays. It is the layer that everything else sits on. If you have a java virtual machine background, numpy is closest to a primitive array, like a double array in Java, except that arithmetic on it is vectorized at the see-language level. You do not write a for loop to add two arrays; you just write A plus B, and numpy does the loop for you in native code.
+
+The second is pandas, usually imported under the alias p d. Pandas gives you labeled tables, called data frames, with operations that feel like a database query language. For a java virtual machine reader, think of pandas as what you would get if Java's stream of row were column typed and had a fluent SQL-like API. The closest analogue you may already know is Spark's data frame.
+
+The third is matplotlib. Matplotlib is the low level plotting library. It gives you full control over the figure and the axes, and you will reach for it whenever you need a chart that does not fit one of the higher level helpers.
+
+The fourth is seaborn. Seaborn sits on top of matplotlib and gives you statistical plots in one or two lines. Distributions, correlations, categorical breakdowns. When you just want to see the shape of the data, seaborn is the right reach.
+
+The fifth is scipy stats. This is the statistics toolkit. Statistical tests, probability distributions, and inference. We will lean on it heavily in notebook six.
+
+After describing these libraries, the notebook imports them in a single code cell using the standard aliases. Numpy as n p, pandas as p d, matplotlib's pyplot as p l t, and seaborn as s n s. Statistics functions come from scipy. We also set seaborn's default theme to a white grid style so the plots stay readable in both light and dark themes.
+
+Now we introduce the domain we will use across every notebook in this repo. Fintech Bank. A mid size digital bank operating in India. The same domain shows up in the apache spark repo, the databricks data engineer repo, and the machine learning repo, so the mental model carries across all of your study tracks. You do not have to learn a new domain every time you open a new notebook.
+
+Fintech Bank has four business verticals. Cards, loans, accounts, and payments. There are a handful of core tables that we will lean on across the seven notebooks. The customers table holds know your customer information — name, age, city, income. A data scientist uses it for demographics, segmentation, and missing data patterns. The bank accounts table holds account balances and types, which is useful for skewed distribution analysis and log transforms. The loan accounts table holds loan amount, equated monthly installment, and tenure, useful for distributions and for correlation with credit score. The loan repayments table holds per loan repayment events, useful for time series and group by aggregations. The card transactions table holds per card swipes, useful for outlier detection and hourly patterns. And the payments table holds unified payments interface and national electronic funds transfer transactions, useful for hypothesis testing across channels.
+
+A practical note on data. All datasets in these notebooks are generated in cell. We do not depend on external files. The data is small enough — twenty to one hundred rows — to run instantly, but shaped to match the real schema. Notebook three will introduce how to read comma separated value files, jason files, parquet files, and sequel sources properly. The rest of the repo stays in cell.
+
+With that context in place, the notebook does one short pass through the workflow loop on a twenty row slice of customers data. The point is not the code; the point is to feel the shape of the workflow before we zoom in on each step in later notebooks.
+
+The first step is acquire. The notebook builds a small customers data frame with twenty rows. Each row has a customer ay-dee, a name, an age, a city, and a monthly income. The names are realistic Indian names, the cities are major Indian metros, and the incomes are in rupees per month. In a real project this step would mean reading from a database or a file. Here we just construct the data frame in memory.
+
+The second step is the first look. The first three commands of every data science session are head, info, and describe. Head shows you what a row actually looks like. Info shows you the columns, their types, and whether any values are missing. Describe shows you the numeric shape of each column — the minimum, the maximum, the mean, and the quartiles. Get into the habit of running these three commands the moment a data frame lands in your session. They tell you within seconds whether the data is what you expected.
+
+The third step is explore. The workhorse of exploration is the group by. The notebook computes the average monthly income per city, sorted from highest to lowest. If you know sequel, this is the same idea as select city and the average of monthly income from the customers table, group by city, order by the average descending. We will see this same pattern again and again across the next six notebooks.
+
+The fourth step is communicate. A single chart turns the table of averages into something a stakeholder can grasp in two seconds. The notebook draws a horizontal bar chart, one bar per city, where the bar length is the average monthly income. Seaborn handles the styling for us; matplotlib gives us the figure and the axes to tweak.
+
+Now let's map what we just did back to the loop. The acquire step was building the customers data frame in cell. In a real project this would be reading from a file or a database, which notebook three covers. The clean step we skipped here because the data was synthetic and already clean. Notebook four covers missing data, deduplication, and type fixes. The explore step was head, info, describe, and the group by by city. The model step we did not do. Modeling lives in the machine learning repo. And the communicate step was the bar chart at the end.
+
+Notice what is missing. There is no model. That is the point. Notebooks two through seven build the entire stack underneath modeling. By the time you open the machine learning repo, the cleaning and the feature engineering will already feel routine.
+
+A quick preview of what's next. Notebook two zooms into numpy, the numeric core. Every column of every pandas data frame is, underneath, a numpy array. Understanding the n dimensional array, data types, vectorization, and broadcasting is what makes the rest of the stack click.
+
+Two small exercises before you move on, to lock in the loop. First, add a credit score column to the customers data frame using numpy's random number generator with a fixed seed, and re run describe to see how the summary statistics change. Second, build a group by that shows the maximum income per city instead of the mean, and plot it the same way. Closing the notebook and writing these from memory is worth more than re reading this page.
+
+That is the map of the territory. The next six notebooks fill it in.
