@@ -1,0 +1,91 @@
+Welcome to notebook seven. Exploratory data analysis and feature engineering. The capstone for this entire data science track.
+
+Notebooks two through six taught you the tools. This notebook runs them end to end on a single fintech bank dataset and hands the result off to the machine learning repo. By the end of this notebook you should be able to take any new dataset and run the same workflow from raw data to model ready features without thinking about it.
+
+The flow we follow is the standard exploratory data analysis loop, applied in order. Step one, first look — shape, types, missing values, and the basic numeric summary. Step two, univariate distributions — what shape is each column. Step three, bivariate relationships — how does each feature relate to the target. Step four, correlation pruning — which features are redundant. Step five, cleaning — impute missing values and cap outliers. Step six, feature engineering — log transforms, ratios, and categorical encoding. And step seven, the handoff — a train test split, ready for the machine learning repo.
+
+The target we will predict is has defaulted. A binary column, one if a customer has defaulted on at least one loan, zero otherwise. Fintech bank cares about predicting this before a loan is issued. The same workflow applies whether the data is synthetic or real.
+
+Now let's build the dataset. For this end to end pass we synthesize a five hundred customer dataset shaped like real fintech bank data. Segments, incomes, balances, loan counts, card activity, tenure. Plus a target column whose probability depends on income, loan count, and tenure. We also inject realistic mess. Missing values in three columns. And a few outlier balances for high net worth customers.
+
+The point of the synthetic data is predictable patterns for teaching. In real life the patterns are weaker and more confounded. But the workflow is identical.
+
+The first code cell sets up the data. It imports numpy, pandas, matplotlib, seaborn, scipy stats, and the train test split function from scikit learn. It seeds a random number generator at forty two for reproducibility. Then it builds the synthetic data in layers.
+
+First the segment column — retail with probability seventy five percent, wealth with probability twenty five percent.
+
+Then income, drawn from a log normal distribution with a lower mean for retail and a higher mean for wealth. So the segment column drives the income distribution.
+
+Then account balance, computed as income times a random multiplier between two and thirty. Five customers get an extra fifty times multiplier injected — those are the high net worth outliers.
+
+Then age, city, number of loans, number of card transactions in the last thirty days, and months with the bank. All drawn from sensible distributions.
+
+Then the default target. We build a logistic regression in reverse — start with a logit value, push it up when income is low, push it up more when the customer has many loans, push it up when tenure is short. Convert to a probability, and then flip a coin per customer to assign zero or one.
+
+After building the data frame, we deliberately inject missingness. Twenty five missing values in monthly income. Ten missing in account balance. Five missing in city. The shape printed at the end shows five hundred rows by ten columns. The default rate is somewhere around ten to fifteen percent — realistic for a credit portfolio.
+
+Step one. First look. The trio from notebook one. Dot info, dot describe, and is n a dot sum. Run these the moment a new data frame lands. They tell you in under five seconds what you are working with. Shape, data types, null counts, and the numeric shape of each column.
+
+You will see that monthly income, account balance, and city all have missing values. The numeric summary will show that the income mean is higher than the median — confirming the right skew we expect. And account balance has a max value far above its seventy fifth percentile — confirming the outliers we injected.
+
+Step two. Univariate distributions. For each numeric column, look at its distribution. For each categorical column, look at its counts. This is the visual analog of dot describe. Same information, different format, often more informative.
+
+Check three things on every plot.
+
+First, is the distribution symmetric or skewed. Skewed columns will want a log transform later.
+
+Second, are there visible outliers in the tails.
+
+And third, for categorical columns, is one category dominant. That may be a class imbalance problem in the target, or a low signal column for the features.
+
+The notebook draws a three by three grid of plots. The first six panels show histograms for the six numeric features. The bottom row shows counts for city, segment, and the target. You should see the income and balance histograms are heavily right skewed. The number of loans histogram has a sharp peak near one. The age distribution is roughly uniform across the working age range. And the target has a clear class imbalance — far fewer defaulters than non defaulters.
+
+Step three. Bivariate relationships with the target. The question that drives everything else. Which features differ between defaulters and non defaulters.
+
+A feature whose distribution looks the same across the two target values has no predictive power. A feature whose distribution shifts is exactly what a model will learn from. A grid of boxplots, one per numeric feature, split by has defaulted, gives you this answer in one glance.
+
+The notebook draws a two by three grid of boxplots. You should see three things. Monthly income and months with bank both shift downward for defaulters — defaulters earn less and have been with the bank a shorter time. Number of loans shifts upward for defaulters — defaulters have taken on more loans. And age and card transaction count look about the same in both groups, suggesting they may not help the model much.
+
+For categorical features, the equivalent move is a chi square test on the cross tab. The notebook builds a cross tab of city by has defaulted, and runs scipy stats dot chi square contingency on it. If the p value is below zero point zero five, the default rate varies meaningfully by city — which means city should be kept as a feature.
+
+Step four. Correlation pruning. A correlation heatmap on the numeric columns answers two questions at once.
+
+First, redundancy. Pairs of features with absolute correlation above zero point nine are carrying the same signal. Keep one, drop the other before modeling. Including both makes a linear model's coefficients unstable and adds nothing.
+
+Second, the target relationship. The row or column for has defaulted tells you which features are linearly correlated with the outcome. The ones with the highest absolute correlation are the most useful predictors.
+
+For non linear relationships, fall back to spearman correlation, covered in notebook six. For most numeric features in real data the two measures agree closely, so pearson is the default first pass.
+
+The notebook draws an annotated correlation heatmap. You will see that monthly income and account balance are highly correlated, since we constructed account balance as income times a multiplier. This is a candidate for dropping one of them, or for using a derived feature instead. The notebook also prints the absolute correlation with the target, sorted from highest to lowest, so you can read off the most predictive features at a glance.
+
+Step five. Cleaning. Two fixes, in order.
+
+First, missing values. Fill monthly income with the per segment median. This preserves the wealth retail income gap rather than blurring it. Filling with a single global median would flatten the segment difference, which is signal we want to keep. Fill account balance with the global median — fine because the distribution is messy enough that segment specific imputation does not buy much. Fill missing city with the sentinel string parenthesis unknown parenthesis. This makes the missing rows survive one hot encoding instead of disappearing.
+
+Second, outliers. Cap account balance at the ninety ninth percentile. This stops the five injected outliers from dominating a regression's coefficients. For tree based models the outlier cap matters less. For linear models, k nearest neighbors, and most distance based methods, it matters a lot.
+
+The notebook applies all four fixes and then prints the null count again to confirm everything is filled. It also prints the cap value so you know where the clip happened.
+
+Step six. Feature engineering. Three moves take this dataset from clean to model ready.
+
+First, log transform skewed numerics. Monthly income and account balance are right skewed. Apply numpy dot log one plus, which is log of one plus x, and which handles zeros gracefully. The new columns are log income and log balance. Notebook six showed why most models prefer log transformed inputs for skewed columns.
+
+Second, ratio features. Models pick up relationships between features. But you can give them a head start by hand crafting the ratios you know matter. Number of loans divided by months with bank is loan acquisition rate — how aggressively the customer is taking on new debt. A single number with more signal than either input alone. Account balance divided by monthly income is months of savings — a classic credit risk signal.
+
+Third, one hot encode categoricals. City and segment are strings. Models want numbers. The function pandas dot get dummies creates one binary column per category value. Pass drop first equals true to drop one column per categorical variable, avoiding the dummy variable trap of perfect multicollinearity.
+
+After feature engineering, the original monthly income and account balance columns are dropped, replaced by their log transformed and ratio versions. The final feature matrix is then printed with its new shape and column list. You should see a matrix with around fifteen columns — six numeric features, four derived features, and the one hot dummy columns for city and segment.
+
+Step seven. The handoff. The final code cell does the train test split using scikit learn's train test split function. Eighty percent train, twenty percent test. Random state forty two for reproducibility. And critically, stratify equals y. Stratify on the target keeps the class balance equal across train and test, which matters when the target is imbalanced. Without stratification, you can get unlucky and end up with very few defaulters in the test set, making evaluation noisy.
+
+The cell prints the train and test shapes and the default rate in each. You should see the default rate within a fraction of a percent across the two splits, confirming the stratification worked.
+
+Now the handoff to the machine learning repo. You now have four arrays — x train, x test, y train, and y test — with the following properties. No missing values. No string columns — everything is numeric or boolean. No extreme outliers — capped at the ninety ninth percentile. Skewed columns transformed to roughly normal. And a target class balance preserved across train and test via stratified sampling. This is exactly the input shape that scikit learn classifiers expect.
+
+In the machine learning repo, you would now fit a baseline model. Logistic regression on the same features above is the right starting point. Evaluate on the test set using precision, recall, and r o c a u c. Iterate with tree based models, more features, and hyperparameter tuning.
+
+A summary of what this track gave you. Notebook one — the acquire, clean, explore, model, communicate loop. Notebook two — vectorized numpy operations instead of for loops. Notebook three — series and data frames, and reading from comma separated value, jason, parquet, and sequel sources. Notebook four — missing data, group by, merge, pivot, melt, and time series resampling. Notebook five — figure and axes plots with matplotlib and seaborn. Notebook six — hypothesis testing, effect sizes, and correlation read honestly. And notebook seven — a full exploratory data analysis and feature engineering pass that hands clean data to machine learning.
+
+The four pillars from the learning framework — notebook, audio, node map, and Claude question and answer — apply to every concept ahead of you. The work from here is repetition. Build a node map that compresses each notebook into five to seven nodes. Listen to the audio on a commute. Then re derive the queries from memory a week later.
+
+Onward to the machine learning repo.
