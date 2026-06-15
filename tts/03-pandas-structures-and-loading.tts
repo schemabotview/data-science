@@ -30,6 +30,14 @@ The attributes to know on day one are these. Dot shape gives you a tuple of rows
 
 The notebook builds a small customers data frame with five rows. Realistic Indian names, ages, cities, and monthly incomes, indexed by customer ay-dee. Then it prints the shape, the column names, and the data types. You will see name and city show up as object, which is pandas speak for string. Age and income show up as integer sixty four.
 
+Now a quick aside for the relational database reader. Coming from sequel, you picture a table as rows first. Each row is a record, columns sit inside it. Pandas is laid out the other way. A data frame is a collection of column series, and it carries labels on two axes. Column labels across the top, where each one comes from that series' own dot name attribute. And one shared row index down the side, that every column lines up against.
+
+Two facts surprise people from a database background. The first one. The column header is the series' dot name. A series is not just values plus index. It also has a name. Drop it into a data frame and that name becomes the column label. Build from a dictionary and the dictionary keys supply the names directly.
+
+The second fact is the big one. The row index is shared, and it is built by aligning labels — not by stacking values position by position. When columns have different indexes, pandas takes the union of their labels, makes that the one shared row index, and matches each value to its label. Where a label is missing in a column, you get not a number in that cell.
+
+The mental model to lock in. The index is a key, not a row number. Pandas matches on it automatically, the way sequel matches on a join on key. The difference is that in pandas, the join key is always on. Every operation aligns by index whether you asked for it or not. The notebook demonstrates this by building a data frame from two series with different indexes — an income series and a city series that overlap on some customer ay-dees but not all. The result is a single table where the row index is the union of both, and the customers who are missing from one column show up as not a number. This previews the missing data work coming in notebook four.
+
 Now selecting columns. Two patterns cover everything. Customers in square brackets with the column name as a string returns a single column as a series. Customers in square brackets, with another set of square brackets inside containing a list of column names, returns a data frame with just those columns. Note the double brackets — the outer pair is the indexer, the inner pair is the Python list of names. Forget the inner brackets and pandas thinks you handed it a tuple, which it does not know how to interpret. This trips up everyone once.
 
 Now selecting rows. Three ways. Each has its place.
