@@ -52,9 +52,11 @@ And now we reach the headline. Vectorization. This is the single biggest reason 
 
 The Python way. To multiply every element of a list by two, you write a for loop. Each iteration goes through the interpreter. Fetch the object, unbox the integer, multiply, box the result, store the pointer. Repeat one million times. Slow.
 
-The numpy way. The expression array times two on an n d array calls a single compiled see-language loop that runs at memory bandwidth speed. The interpreter is hit once per operation, not once per element.
+The numpy way. The expression array times two on an n d array calls a single compiled see-language loop. The interpreter is hit once per operation, not once per element. That alone is where most of the speedup comes from — often fifty times or more — because the per-element interpreter overhead is simply gone.
 
-The rule for writing fast numpy code is short. If you wrote a for loop over array elements, you wrote the wrong code. Find the vectorized operation. The notebook demonstrates this by timing a Python list comprehension versus a numpy multiplication on a million elements. You will typically see numpy come in fifty to a hundred times faster, depending on your machine.
+On top of that, the compiled loop can use single instruction, multiple data, often shortened to s-i-m-d. The c-p-u has wide registers that hold several numbers at once and multiply them in a single instruction — for example, eight values per step instead of one. So array times two stacks two wins. Killing per-element interpreter overhead is the big one. Hardware-level parallelism inside the loop is an extra multiplier on top.
+
+The rule for writing fast numpy code is short. If you wrote a for loop over array elements, you wrote the wrong code. Find the vectorized operation, and let the see-language loop and s-i-m-d do the work. The notebook demonstrates this by timing a Python list comprehension versus a numpy multiplication on a million elements. You will typically see numpy come in fifty to a hundred times faster, depending on your machine.
 
 Now broadcasting. Vectorization handles arrays of the same shape. Broadcasting is the trick that makes arrays of different shapes work together, without copying the data.
 
